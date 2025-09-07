@@ -118,4 +118,3 @@ A typical make target:
 
 A typical g++ invocation:
 - g++ -std=c++17 -Wall -Wextra -Werror -Wfatal-errors -Wno-sign-compare -Wnon-virtual-dtor -g a2.cpp -o a2
-EOF
