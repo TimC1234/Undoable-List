@@ -1,120 +1,163 @@
-# Undoable List
+# Undoable List - Dynamic String List with Undo Functionality
 
-Undoable List is a command-driven, list-like container with built-in undo and redo of previous editing operations. It processes plain-text commands from a file or standard input and applies them deterministically to a persistent in-memory list.
+An advanced dynamic string list implementation featuring comprehensive undo capabilities. This C++ data structure allows users to perform various list operations and reverse them using a sophisticated command-based undo system.
 
-## What it does
+## What it Does
 
-Undoable List maintains an editable sequence and a bounded or unbounded history of edits so changes can be rolled back and reapplied. Typical operations include inserting, erasing, updating elements, and querying or printing state, alongside UNDO and REDO that revert or reapply prior edits.
+The Undoable List is a dynamic array-based string container that maintains a complete history of modifications, enabling users to undo any operation that changes the list's state. The system supports all standard list operations while providing the ability to reverse changes in LIFO (Last In, First Out) order.
 
-## How to run
+## Key Features
 
-- Build
-  - Using make:
-    - make a2
-  - Using g++ directly:
-    - g++ -std=c++17 -Wall -Wextra -Werror -Wfatal-errors -Wno-sign-compare -Wnon-virtual-dtor -g a2.cpp -o a2
+- **Dynamic Array Management**: Automatic capacity expansion when needed
+- **Complete Undo System**: All modifying operations can be undone
+- **Memory Efficient**: Stack-based command storage for undo operations
+- **Safe Operations**: Bounds checking with exception handling
+- **Copy Semantics**: Proper copy constructor and assignment operator (undo stack not copied)
 
-- Execute
-  - From a command file:
-    - ./a2 input.txt
-  - Interactive (if supported by the build):
-    - ./a2
-    - Then type commands line-by-line and press Enter
+## How to Run
 
-- Example
-  - ./a2 commands.txt
-  - Output is printed to standard output as operations that produce visible results occur (e.g., PRINT, SIZE, or error messages).
+### Compilation
+```bash
+make Stringlist_test    # Run original functionality tests
+make a2_test           # Run undo functionality tests
+```
 
-## Commands
+Or manually compile:
+```bash
+g++ -std=c++17 -Wall -Wextra -Werror -Wfatal-errors -Wno-sign-compare -Wnon-virtual-dtor -g Stringlist_test.cpp -o Stringlist_test
+g++ -std=c++17 -Wall -Wextra -Werror -Wfatal-errors -Wno-sign-compare -Wnon-virtual-dtor -g a2_test.cpp -o a2_test
+```
 
-The system is designed to parse and execute a sequence of high-level list operations. The exact command names below reflect a standard, minimal interface commonly used with undoable sequence structures; adjust the names if the implementation uses slightly different tokens.
+### Execution
+```bash
+./Stringlist_test      # Test basic functionality
+./a2_test             # Test undo functionality
+valgrind ./a2_test    # Test with memory leak detection
+```
 
-- Mutation
-  - PUSH_BACK value
-  - PUSH_FRONT value
-  - INSERT index value
-  - ERASE index
-  - SET index value
-  - CLEAR
-- Queries
-  - SIZE
-  - EMPTY
-  - GET index
-  - PRINT
-- History
-  - UNDO
-  - REDO
+### Example Usage
+```cpp
+#include "Stringlist.h"
+#include <iostream>
 
-Index-based commands operate on zero-based indices. Commands are one per line. Whitespace-delimited tokens are expected; values containing spaces must be provided in a manner supported by the parser (e.g., as a single token or quoted, depending on the implementation).
+int main() {
+    Stringlist lst;
+    
+    // Add elements
+    lst.insert_back("one");
+    lst.insert_back("two");
+    lst.insert_back("three");
+    // lst == {"one", "two", "three"}
+    
+    // Undo operations
+    lst.undo(); // removes "three"
+    lst.undo(); // removes "two"
+    lst.undo(); // removes "one"
+    // lst == {}
+    
+    return 0;
+}
+```
 
-## Input and output
+## Supported Operations
 
-- Input: a plain-text file with one command per line, or interactive input.
-- Output: textual responses and diagnostics on standard output:
-  - PRINT shows the current list in a compact representation, e.g., [a, b, c]
-  - SIZE prints the current length as an integer
-  - GET prints the value at the index
-  - UNDO/REDO print nothing unless the implementation reports history actions or errors
-  - Invalid operations (e.g., out-of-range indices, empty UNDO/REDO history) emit clear error messages
+### Undoable Operations
+All of these operations can be reversed using `undo()`:
 
-## Data structures and algorithms
+1. **insert_before(index, string)** - Insert string at specified position
+2. **insert_back(string)** - Append string to end of list
+3. **insert_front(string)** - Insert string at beginning of list
+4. **remove_at(index)** - Remove string at specified position
+5. **remove_all()** - Clear all strings from list
+6. **remove_first(string)** - Remove first occurrence of string
+7. **set(index, string)** - Replace string at specified position
+8. **operator=(other)** - Assign another list (undo restores original state)
 
-- Core container
-  - Custom linked list implementing FIFO, random-access via traversal, and stable iterators for edit operations
-  - Typical choice: doubly linked list for O(1) insert/erase at known positions; singly linked list if design favors minimal memory and forward traversal
-- History model
-  - Two-structure history: a “past” stack for undo and a “future” stack for redo
-  - Mutation commands push an inverse operation onto “past” and clear “future” (branching semantics); UNDO pops from “past” and applies the inverse while pushing the original onto “future”; REDO pops from “future”, applies it, and pushes the inverse onto “past”
-- Complexity
-  - PUSH_FRONT/PUSH_BACK: O(1)
-  - INSERT/ERASE at index: O(n) traversal + O(1) link fix-up (with doubly linked list)
-  - SET/GET at index: O(n) traversal
-  - UNDO/REDO of recorded operations: O(1) to dispatch + cost of the underlying inverse mutation (e.g., O(1) for push/pop-like actions; O(n) if index traversal is required)
-- Error handling
-  - Robust checks for out-of-range indices, empty structure conditions, and empty history stacks
+### Non-Undoable Operations
+- **undo()** - Reverse the most recent undoable operation
+- **get(index)** - Retrieve string at position
+- **size()** - Get number of elements
+- **empty()** - Check if list is empty
+- **contains(string)** - Check if string exists in list
+- **index_of(string)** - Find position of string
 
-## Implementation details
+## Data Structures and Algorithms
 
-- Language and standard: C++17
-- Project layout: single-file or few-file solution with all logic in a2.cpp or split into minimal headers for the list and history primitives
-- Parsing: token-based parsing of lines with straightforward dispatch on the first token
-- Immutability and inverses: edits are captured as self-contained operation records that include all data required to invert (e.g., original value, index, and action type)
-- Memory management: manual allocation/deallocation for list nodes; RAII scoping and destructors ensure no leaks
-- Defensive programming: runtime checks with meaningful messages; assertions in internal helpers where appropriate
+### Core Data Structure
+- **Dynamic Array**: Resizable string array with automatic capacity doubling
+- **Capacity Management**: Starts with capacity 10, doubles when full
+- **Efficient Access**: O(1) random access to elements
 
-## Examples
+### Undo Stack Implementation
+- **Stack Structure**: Singly-linked list implementation
+- **Command Storage**: String-based command format for space efficiency
+- **Memory Management**: Automatic cleanup of undo history
 
-- Example input
-  - PUSH_BACK apple
-  - PUSH_BACK banana
-  - INSERT 1 cherry
-  - PRINT
-  - UNDO
-  - PRINT
-  - REDO
-  - SET 2 durian
-  - GET 2
-  - SIZE
-  - ERASE 0
-  - PRINT
+#### Stack Node Structure
+```cpp
+struct Stack {
+    string action;    // Command string for undo operation
+    Stack *next;      // Pointer to next command
+    bool undone;      // Flag to track processed commands
+};
+```
 
-- Example output
-  - [apple, cherry, banana]
-  - [apple, banana]
-  - durian
-  - 3
-  - [banana, durian]
+### Undo Command Format
 
-## Notes
+The system uses a compact string-based command format:
 
-- History capacity can be fixed or unbounded. If fixed, the oldest entries are dropped when the limit is reached.
-- After any new mutation, redo history is cleared to ensure correct branching semantics.
-- For large lists or frequent indexed operations, consider augmenting with cached cursors or a skip structure if required by performance goals.
+- **INSERT operations**: `"REMOVE index"` - Stores removal command
+- **REMOVE operations**: `"INSERT index value"` - Stores insertion command  
+- **SET operations**: `"SET index original_value"` - Stores restoration command
+- **Assignment**: `"set original_values"` or `"Empty "` - Stores complete state
+- **Remove All**: `"Set original_values"` - Stores complete restoration
 
-## Build configuration
+### Algorithm Complexity
 
-A typical make target:
-- a2: builds the executable with C++17, warnings-as-errors, and debug symbols
+| Operation | Time Complexity | Space Complexity |
+|-----------|----------------|------------------|
+| Insert (amortized) | O(1) | O(1) |
+| Remove | O(n) | O(1) |
+| Set | O(1) | O(1) |
+| Undo | O(n) | O(1) |
+| Assignment | O(n) | O(n) |
 
-A typical g++ invocation:
-- g++ -std=c++17 -Wall -Wextra -Werror -Wfatal-errors -Wno-sign-compare -Wnon-virtual-dtor -g a2.cpp -o a2
+### Key Implementation Details
+
+**Command Parsing**: Uses `substr()` and `stoi()` for efficient string parsing and command extraction
+
+**Memory Management**: 
+- Dynamic node allocation for stack operations
+- Proper cleanup in destructor prevents memory leaks
+- Undo stack cleared when undone commands are no longer needed
+
+**String Concatenation**: Special `toLongString()` helper for efficient state serialization during bulk operations
+
+**Edge Case Handling**:
+- Empty list assignments tracked with special "Empty" command
+- Self-assignment detection prevents unnecessary operations
+- Bounds checking with descriptive error messages
+
+## Technical Implementation
+
+- **Language**: C++17
+- **Memory Model**: RAII principles with manual linked list management
+- **Error Handling**: Exception-based bounds checking
+- **String Processing**: STL string operations with custom parsing logic
+- **Copy Semantics**: Deep copy of data array, shallow copy of undo stack (by design)
+
+## Memory Safety
+
+- **Valgrind Clean**: No memory leaks or errors under normal operation
+- **RAII Compliance**: Automatic resource cleanup in destructors
+- **Exception Safety**: Proper cleanup on bounds errors
+- **Iterator Safety**: No dangling pointers in stack operations
+
+## Testing
+
+The implementation includes comprehensive test suites:
+
+- **Basic Functionality**: Tests all core operations without undo
+- **Undo Functionality**: Tests all undoable operations and edge cases
+- **Memory Safety**: Valgrind testing for leak detection
+- **Edge Cases**: Empty lists, self-assignment, and boundary conditions
